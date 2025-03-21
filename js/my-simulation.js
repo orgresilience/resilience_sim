@@ -89,7 +89,7 @@ function initSimulation() {
 
 // Function to send an email via EmailJS
 function sendEmail(E_history, O_history) {
-  emailjs.init("YOUR_EMAILJS_USER_ID"); // Replace with your EmailJS user ID
+  emailjs.init("UjOAvsOdS6Syhwa_n"); // Replace with your EmailJS user ID
 
   // Format the E and O history as a table
   let formattedData = `<table border="1">
@@ -105,7 +105,7 @@ function sendEmail(E_history, O_history) {
     message: formattedData
   };
 
-  emailjs.send("YOUR_SERVICE_ID", "YOUR_TEMPLATE_ID", emailParams)
+  emailjs.send("service_aro1a8j", "template_kkae6ck", emailParams)
     .then(() => {
       alert("Simulation complete. Email sent!");
     })
