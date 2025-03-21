@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Organizational Resilience Simulation</title>
   <link rel="stylesheet" href="css/my-simulation.css">
-  <!-- Include Plotly -->
+  <!-- Include Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Include your simulation JS -->
   <script src="js/my-simulation.js" defer></script>
@@ -26,7 +26,11 @@
   <div id="status"></div>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      initSimulation();
+      if (typeof initSimulation === "function") {
+        initSimulation();
+      } else {
+        console.error("Error: initSimulation() is not defined. Check if js/my-simulation.js loaded correctly.");
+      }
     });
   </script>
 </body>
