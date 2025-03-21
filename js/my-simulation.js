@@ -87,27 +87,39 @@ function initSimulation() {
   let simulationInterval = setInterval(updateSimulation, 100);
 }
 
-// Function to send an email via EmailJS
+// Function to convert data to CSV format
+function convertToCSV(E_history, O_history) {
+  let csvContent = "Time Step,Environment (E),Organization (O)\n";
+
+  for (let i = 0; i < E_history.length; i++) {
+    csvContent += `${i},${E_history[i].toFixed(2)},${O_history[i].toFixed(2)}\n`;
+  }
+
+  return csvContent;
+}
+
+// Function to send an email via EmailJS with CSV attachment
 function sendEmail(E_history, O_history) {
   emailjs.init("UjOAvsOdS6Syhwa_n"); // Replace with your EmailJS user ID
 
-  // Format the E and O history as a table
-  let formattedData = `<table border="1">
-    <tr><th>Time Step</th><th>Environment (E)</th><th>Organization (O)</th></tr>`;
-  for (let i = 0; i < E_history.length; i++) {
-    formattedData += `<tr><td>${i}</td><td>${E_history[i].toFixed(2)}</td><td>${O_history[i].toFixed(2)}</td></tr>`;
-  }
-  formattedData += `</table>`;
+  // Convert history data to CSV
+  const csvData = convertToCSV(E_history, O_history);
 
+  // Encode CSV data in Base64 format (needed for attachments)
+  const base64CSV = btoa(unescape(encodeURIComponent(csvData)));
+
+  // Prepare email parameters
   const emailParams = {
     to_email: "eilseven@ucp.pt",
     subject: "Simulation Results: E and O values",
-    message: formattedData
+    message: "Please find the attached CSV file containing the simulation data.",
+    attachment: base64CSV, // Attach CSV file
+    filename: "simulation_results.csv"
   };
 
   emailjs.send("service_aro1a8j", "template_kkae6ck", emailParams)
     .then(() => {
-      alert("Simulation complete. Email sent!");
+      alert("Simulation complete. Email sent with CSV!");
     })
     .catch((error) => {
       console.error("Email failed to send:", error);
