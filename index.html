@@ -5,13 +5,13 @@
   <title>Organizational Resilience Simulation</title>
   <link rel="stylesheet" href="css/my-simulation.css">
   <!-- Include Plotly -->
-  <script src="js/plotly.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Include your simulation JS -->
   <script src="js/my-simulation.js" defer></script>
 </head>
 <body>
   <h1>Organizational Resilience Simulation</h1>
-  <div id="graph"></div>
+  <canvas id="graphCanvas"></canvas>
   <div id="sliders">
     <label for="modularity">Modularity:</label>
     <input type="range" id="modularity" min="0" max="1" step="0.01" value="0.5">
@@ -25,10 +25,9 @@
   <!-- New status div to show current state values -->
   <div id="status"></div>
   <script>
-    // Initialize the simulation immediately when the script loads
-    if (typeof initSimulation === 'function') {
+    document.addEventListener("DOMContentLoaded", function () {
       initSimulation();
-    }
+    });
   </script>
 </body>
 </html>
