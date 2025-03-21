@@ -64,10 +64,16 @@ function initSimulation() {
 
     // Update the chart
     chart.update();
+
+    // Update status display
+    document.getElementById("status").innerHTML = `
+      <p><strong>Environment (E):</strong> ${E.toFixed(2)}</p>
+      <p><strong>Organization (O):</strong> ${O.toFixed(2)}</p>
+      <p><strong>Performance:</strong> ${perf.toFixed(2)}</p>
+    `;
   }
 
   // Start simulation loop
-  updateSimulation();
   setInterval(updateSimulation, 100);
 }
 
