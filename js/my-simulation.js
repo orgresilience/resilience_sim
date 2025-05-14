@@ -100,7 +100,7 @@ function convertToCSV(E_history, O_history) {
 
 // Function to send an email via EmailJS with CSV attachment
 function sendEmail(E_history, O_history) {
-  emailjs.init("UjOAvsOdS6Syhwa_n"); // Replace with your EmailJS user ID
+  emailjs.init(""); // Replace with your EmailJS user ID
 
   // Convert history data to CSV
   const csvData = convertToCSV(E_history, O_history);
