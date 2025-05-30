@@ -52,10 +52,10 @@ function initSimulation() {
   const alpha_0   = 0.01;
   const noiseStd  = 0.0;
 
-  const me = 0.719;
-  const ma = 0.567;
-  const sr = 0.324;
-  const se = 0.119;
+  const me = 1.365;
+  const ma = 1.475;
+  const sr = 2.259;
+  const se = 0.997;
 
   const shockTimes      = [25, 32, 45, 60, 80];
   const shockMagnitudes = [1.5, 2.0, 1.0, 2.5, 1.8];
@@ -91,14 +91,14 @@ function initSimulation() {
 
     /* 3. Adaptive adjustment */
     const alpha_c = alpha_0 + ma * modVal;
-    const E_des   = E - me * modVal - se * slackVal;
+    const E_des   = E - me * modVal;
     if (alpha_c > 0) {
       O += alpha_c * (E_des - O);
     }
 
     /* 4. Performance (ROA) */
     const noise = noiseStd ? gaussianNoise(0, noiseStd) : 0;
-    const roa   = 1.6 - k * Math.pow(O - E, 2) + noise;
+    const roa   = 1.6 - k * Math.pow(O - E - se * slackVal, 2) + noise;
 
     /* 5. Record & plot */
     time_values.push(t);
