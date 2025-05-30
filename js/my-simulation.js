@@ -1,130 +1,156 @@
 function initSimulation() {
-  // Get the canvas context
+  /* ──────────────── Chart setup ──────────────── */
   const ctx = document.getElementById("graphCanvas").getContext("2d");
-
-  // Create the Chart.js line chart
   const chart = new Chart(ctx, {
-    type: 'line',
+    type: "line",
     data: {
-      labels: [], // Time steps
-      datasets: [{
-        label: 'Performance',
-        data: [], // Performance history
-        borderColor: 'blue',
-        fill: false
-      }]
+      labels: [],
+      datasets: [
+        {
+          label: "Performance (ROA)",
+          data: [],
+          borderColor: "blue",
+          fill: false,
+        },
+      ],
     },
     options: {
       animation: false,
       responsive: true,
       scales: {
-        x: { title: { display: true, text: 'Time Steps' } },
-        y: { title: { display: true, text: 'Performance' }, min: 0, max: 2 }
-      }
-    }
+        x: { title: { display: true, text: "Quarters since foundation" } },
+        y: { title: { display: true, text: "Performance (ROA)" }, min: 0, max: 2 },
+      },
+    },
   });
 
-  // Simulation parameters
-  let E = 5.0, O = 4.0;
-  const k = 1, alpha_0 = 0.1, p_shock = 0.1, shock_range = 2.0;
-  let time_values = [0];
-  let E_history = [E]; // Store environment values
-  let O_history = [O]; // Store organization values
+  /* ──────────────── Simulation constants ──────────────── */
+  // State
+  let E = 5.0;
+  let O = 4.0;
+
+  // Fixed coefficients
+  const k = 0.1;
+  const alpha_0 = 0.01;
+  const noiseStd = 0.0;
+
+  const me = 0.719;
+  const ma = 0.567;
+  const sr = 0.324;
+  const se = 0.119;
+
+  // Shock schedule
+  const shock_times = [25, 32, 45, 60, 80];          // 1-based ticks
+  const shock_magnitudes = [1.5, 2.0, 1.0, 2.5, 1.8];
+
+  /* ──────────────── History buffers ──────────────── */
+  const time_values = [];
+  const E_history = [];
+  const O_history = [];
+  const M_history = [];
+  const S_history = [];
+  const ROA_history = [];
+
+  /* ──────────────── Main loop ──────────────── */
+  const maxTimeSteps = 100;
+  const intervalMs   = 400;
+  const simulationInterval = setInterval(updateSimulation, intervalMs);
+
+  // update display for slack slider live
+  document.getElementById("slack").oninput = (e) =>
+    (document.getElementById("slackValue").textContent = parseFloat(e.target.value).toFixed(2));
 
   function updateSimulation() {
-    // Get slider values
-    const mod_val = parseFloat(document.getElementById("modularity").value);
-    const div_val = parseFloat(document.getElementById("diversification").value);
+    /* 1. Time step */
+    const t = time_values.length + 1;        // 1-based
+
+    /* 2. Read controls */
+    const mod_val   = parseFloat(document.querySelector('input[name="modularity"]:checked').value);
     const slack_val = parseFloat(document.getElementById("slack").value);
 
-    // Environmental shock
-    const shock_range_eff = shock_range * (2.2 - mod_val - div_val);
-    if (Math.random() < p_shock * (1 - 0.1 * slack_val)) {
-      E += Math.random() * shock_range_eff;
+    /* 3. Environmental shock */
+    const shockIdx = shock_times.indexOf(t);
+    if (shockIdx !== -1) {
+      const shock_range_eff = shock_magnitudes[shockIdx] * (1 - sr * slack_val);
+      E += shock_range_eff;
     }
 
-    // Adaptation rate
-    const alpha_c = alpha_0 + 0.025 * mod_val**2 - 0.025 * div_val**2 + 0.01 * slack_val;
-    const E_des = E * (1.1 - 0.1 * div_val - 0.1 * mod_val) - slack_val;
+    /* 4. Adaptive adjustment */
+    const alpha_c = alpha_0 + ma * mod_val;
+    const E_des   = E - me * mod_val - se * slack_val;
     if (alpha_c > 0) {
       O += alpha_c * (E_des - O);
     }
 
-    // Compute performance
-    const perf = 2 / (1 + Math.exp(-k * (O - E)));
+    /* 5. Performance (ROA) */
+    const noise = noiseStd > 0 ? gaussianNoise(0, noiseStd) : 0;
+    const roa   = 1.6 - k * Math.pow(O - E, 2) + noise;
 
-    // Store values
-    time_values.push(time_values.length);
+    /* 6. Record histories */
+    time_values.push(t);
     E_history.push(E);
     O_history.push(O);
-    chart.data.labels.push(time_values.length);
-    chart.data.datasets[0].data.push(perf);
+    M_history.push(mod_val);
+    S_history.push(slack_val);
+    ROA_history.push(roa);
 
-    // Keep graph size manageable
+    /* 7. Update chart */
+    chart.data.labels.push(t);
+    chart.data.datasets[0].data.push(roa);
+
     if (chart.data.labels.length > 50) {
       chart.data.labels.shift();
       chart.data.datasets[0].data.shift();
     }
-
-    // Update the chart
     chart.update();
 
-    // Update status display
-    document.getElementById("status").innerHTML = `
-      <p><strong>Environment (E):</strong> ${E.toFixed(2)}</p>
-      <p><strong>Organization (O):</strong> ${O.toFixed(2)}</p>
-      <p><strong>Performance:</strong> ${perf.toFixed(2)}</p>
-    `;
+    /* 8. Status read-out (ROA only) */
+    document.getElementById("status").textContent = `Performance (ROA): ${roa.toFixed(2)}`;
 
-    // Stop the simulation at time step 1000 and send an email with all values
-    if (time_values.length >= 1000) {
-      clearInterval(simulationInterval); // Stop the interval
-      sendEmail(E_history, O_history); // Send email with all values
+    /* 9. Terminate run and email CSV */
+    if (t >= maxTimeSteps) {
+      clearInterval(simulationInterval);
+      sendEmail(E_history, O_history, M_history, S_history, ROA_history);
     }
   }
 
-  // Start simulation loop
-  let simulationInterval = setInterval(updateSimulation, 100);
-}
-
-// Function to convert data to CSV format
-function convertToCSV(E_history, O_history) {
-  let csvContent = "Time Step,Environment (E),Organization (O)\n";
-
-  for (let i = 0; i < E_history.length; i++) {
-    csvContent += `${i},${E_history[i].toFixed(2)},${O_history[i].toFixed(2)}\n`;
+  /* ──────────────── Gaussian noise util ──────────────── */
+  function gaussianNoise(mu, sigma) {
+    let u = 0, v = 0;
+    while (u === 0) u = Math.random();           // (0,1]
+    while (v === 0) v = Math.random();
+    return sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) + mu;
   }
 
-  return csvContent;
+  /* ──────────────── CSV & EmailJS ──────────────── */
+  function convertToCSV(E_hist, O_hist, M_hist, S_hist, R_hist) {
+    let csv = "Time Step,Environment (E),Organization (O),Modularity (M),Slack (S),Performance (ROA)\n";
+    for (let i = 0; i < E_hist.length; i++) {
+      csv += `${i + 1},${E_hist[i].toFixed(2)},${O_hist[i].toFixed(2)},${M_hist[i].toFixed(2)},${S_hist[i].toFixed(2)},${R_hist[i].toFixed(2)}\n`;
+    }
+    return csv;
+  }
+
+  function sendEmail(E_hist, O_hist, M_hist, S_hist, R_hist) {
+    emailjs.init("UjOAvsOdS6Syhwa_n"); // Replace with your EmailJS user ID
+
+    const csvData   = convertToCSV(E_hist, O_hist, M_hist, S_hist, R_hist);
+    const base64CSV = btoa(unescape(encodeURIComponent(csvData)));
+
+    const emailParams = {
+      to_email: "eilseven@ucp.pt",
+      subject: "Simulation Results (ROA)",
+      message: "Please find the attached CSV file containing the simulation data.",
+      attachment: base64CSV,
+      filename: "simulation_results.csv",
+    };
+
+    emailjs
+      .send("service_aro1a8j", "template_kkae6ck", emailParams)
+      .then(() => alert("Simulation complete. Email sent with CSV!"))
+      .catch((error) => console.error("Email failed to send:", error));
+  }
 }
 
-// Function to send an email via EmailJS with CSV attachment
-function sendEmail(E_history, O_history) {
-  emailjs.init(""); // Replace with your EmailJS user ID
-
-  // Convert history data to CSV
-  const csvData = convertToCSV(E_history, O_history);
-
-  // Encode CSV data in Base64 format (needed for attachments)
-  const base64CSV = btoa(unescape(encodeURIComponent(csvData)));
-
-  // Prepare email parameters
-  const emailParams = {
-    to_email: "eilseven@ucp.pt",
-    subject: "Simulation Results: E and O values",
-    message: "Please find the attached CSV file containing the simulation data.",
-    attachment: base64CSV, // Attach CSV file
-    filename: "simulation_results.csv"
-  };
-
-  emailjs.send("service_aro1a8j", "template_kkae6ck", emailParams)
-    .then(() => {
-      alert("Simulation complete. Email sent with CSV!");
-    })
-    .catch((error) => {
-      console.error("Email failed to send:", error);
-    });
-}
-
-// Expose function globally
+/* ──────────────── Make entry-point global ──────────────── */
 window.initSimulation = initSimulation;
