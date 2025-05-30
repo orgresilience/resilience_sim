@@ -14,16 +14,33 @@
 <body>
   <h1>Organizational Resilience Simulation</h1>
   <canvas id="graphCanvas"></canvas>
-  <div id="sliders">
-    <label for="modularity">Modularity:</label>
-    <input type="range" id="modularity" min="0" max="1" step="0.01" value="0.5">
-    <br>
-    <label for="diversification">Diversification:</label>
-    <input type="range" id="diversification" min="0" max="1" step="0.01" value="0.5">
-    <br>
-    <label for="slack">Slack:</label>
-    <input type="range" id="slack" min="0" max="1" step="0.01" value="0.5">
+
+  <div class="control-block">
+    <span class="control-label">Modularity:</span>
+    <label><input type="radio" name="modularity" value="0"   checked />No risk!</label>
+    <label><input type="radio" name="modularity" value="0.15" />Incremental trials</label>
+    <label><input type="radio" name="modularity" value="0.50"  />Moderate trials</label>
+    <label><input type="radio" name="modularity" value="0.65" />Take high risk!</label>
+    <label><input type="radio" name="modularity" value="1"    />Experiment maximally.</label>
   </div>
+
+  <div id="slack-control">
+    <label for="slack"><b>Financial Slack&nbsp;(Cash Reserves in €)</b></label>
+
+    <!-- Slider row -->
+    <div class="slider-row">
+      <span class="slider-label">€0</span>
+
+      <!-- The slider itself -->
+      <input type="range"
+             id="slack"
+             min="0" max="1" step="0.02" value="0" />
+
+      <span class="slider-label">€1 m</span>
+    </div>
+  </div>
+
+
   <!-- New status div to show current state values -->
   <div id="status"></div>
   <script>
